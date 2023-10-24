@@ -20,14 +20,18 @@ class Note {
   private content: string;
   private createdDate: Date;
   private isConfirmed: boolean;
+  private modifiedDate: Date;
+  private type: 'default' | 'requiresConfirmation';
 
 
-  constructor(id: number, title: string, content: string) {
+  constructor(id: number, title: string, content: string, type: 'default' | 'requiresConfirmation') {
     this.id = id;
     this.title = title;
     this.content = content;
     this.createdDate = new Date();
     this.isConfirmed = false;
+    this.modifiedDate = this.createdDate;
+    this.type = type;
   }
 
   getId() {
@@ -54,6 +58,14 @@ class Note {
     return this.createdDate;
   }
 
+  getModifiedDate() {
+    return this.modifiedDate;
+  }
+
+  updateModifiedDate() {
+    this.modifiedDate = new Date();
+  }
+
   getIsConfirmed() {
     return this.isConfirmed;
   }
@@ -75,10 +87,10 @@ class TodoList {
   }
 
   // Метод для додавання нотаток
-  addNote(title: string, content: string) {
+  addNote(title: string, content: string, type: 'default' | 'requiresConfirmation' = 'default') {
     if (title.trim() !== '' && content.trim() !== '') {
       const newId = this.notes.length + 1;
-      const note = new Note(newId, title, content);
+      const note = new Note(newId, title, content, type);
       this.notes.push(note);
     } else {
       console.log('The title and table of contents cannot be empty.');
@@ -99,11 +111,13 @@ class TodoList {
     if (note) {
       note.setTitle(newTitle);
       note.setContent(newContent);
+      note.updateModifiedDate();
     }
   }
+  
 
 
-   // Метод для отримання нотатки за ідентифікатором
+  // Метод для отримання нотатки за ідентифікатором
   getNoteById(id: number) {
     return this.notes.find((note) => note.getId() === id);
   }
@@ -162,8 +176,8 @@ class TodoList {
     } else if (by === 'createdDate') {
       return this.notes.sort((a, b) => a.getCreatedDate().getTime() - b.getCreatedDate().getTime());
     }
-  return [];
-}
+   return [];
+  }
 }
 
 const todoList = new TodoList();
@@ -173,45 +187,45 @@ todoList.addNote("Завдання 3", "Приготувати обід")
 todoList.addNote("Завдання 4", "Зробити уроки з дитиною")
 console.log(todoList.getNoteList());
 
-todoList.deleteNote(1); 
-console.log(todoList.getNoteList());
+// todoList.deleteNote(1); 
+// console.log(todoList.getNoteList());
 
-todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
-console.log(todoList.getNoteList());
+// todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
+// console.log(todoList.getNoteList());
 
-const note = todoList.getNoteById(2);
-console.log(note?.getTitle()); 
-console.log(note?.getContent()); 
-
-
-const allNotes = todoList.getNoteList();
-console.log(allNotes);
+// const note = todoList.getNoteById(2);
+// console.log(note?.getTitle()); 
+// console.log(note?.getContent()); 
 
 
-const notes = todoList.getNoteById(2);
+// const allNotes = todoList.getNoteList();
+// console.log(allNotes);
 
-if (notes) {
-  console.log(notes.getIsConfirmed());
-} else {
-  console.log("Нотатка з ідентифікатором 2 не знайдена.");
-}
 
-const totalNotes = todoList.getTotalNotes();
-console.log(`Загальна кількість нотаток: ${totalNotes}`);
+// const notes = todoList.getNoteById(2);
 
-const unconfirmedNotes = todoList.getUnconfirmedNotesCount();
-console.log(`Кількість невиконаних нотаток: ${unconfirmedNotes}`);
+// if (notes) {
+//   console.log(notes.getIsConfirmed());
+// } else {
+//   console.log("Нотатка з ідентифікатором 2 не знайдена.");
+// }
 
-todoList.markNoteAsDone(1); 
+// const totalNotes = todoList.getTotalNotes();
+// console.log(`Загальна кількість нотаток: ${totalNotes}`);
 
-const searchResults = todoList.searchNotes("обід");
-console.log(searchResults); 
+// const unconfirmedNotes = todoList.getUnconfirmedNotesCount();
+// console.log(`Кількість невиконаних нотаток: ${unconfirmedNotes}`);
 
-const sortedByStatus = todoList.sortNotes("status"); 
-console.log(sortedByStatus);
+// todoList.markNoteAsDone(1); 
 
-const sortedByCreatedDate = todoList.sortNotes("createdDate"); 
-console.log(sortedByCreatedDate);
+// const searchResults = todoList.searchNotes("обід");
+// console.log(searchResults); 
+
+// const sortedByStatus = todoList.sortNotes("status"); 
+// console.log(sortedByStatus);
+
+// const sortedByCreatedDate = todoList.sortNotes("createdDate"); 
+// console.log(sortedByCreatedDate);
 
 
 
