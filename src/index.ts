@@ -64,16 +64,16 @@ class Note {
     this._isConfirmed = isConfirmed;
   }
 
-  getModifiedDate = (): Date => {
-    return this.modifiedDate;
+  getModifiedDate(): Date {
+  return this.modifiedDate;
   }
-  
-  updateModifiedDate = (): void => {
-    this.modifiedDate = new Date();
+
+  updateModifiedDate(): void {
+  this.modifiedDate = new Date();
   }
-  
-  confirmEdit = (): void => {
-    this.isConfirmed = true;
+
+   confirmEdit(): void {
+  this.isConfirmed = true;
   }
 }
 
