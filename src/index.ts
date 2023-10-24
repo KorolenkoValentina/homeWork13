@@ -164,5 +164,55 @@ class TodoList {
     }
   return [];
 }
-
 }
+
+const todoList = new TodoList();
+todoList.addNote("Завдання 1", "Сходити в супермаркет" )
+todoList.addNote("Завдання 2", "Погуляти з собакою")
+todoList.addNote("Завдання 3", "Приготувати обід")
+todoList.addNote("Завдання 4", "Зробити уроки з дитиною")
+console.log(todoList.getNoteList());
+
+todoList.deleteNote(1); 
+console.log(todoList.getNoteList());
+
+todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
+console.log(todoList.getNoteList());
+
+const note = todoList.getNoteById(2);
+console.log(note?.getTitle()); 
+console.log(note?.getContent()); 
+
+
+const allNotes = todoList.getNoteList();
+console.log(allNotes);
+
+
+const notes = todoList.getNoteById(2);
+
+if (notes) {
+  console.log(notes.getIsConfirmed());
+} else {
+  console.log("Нотатка з ідентифікатором 2 не знайдена.");
+}
+
+const totalNotes = todoList.getTotalNotes();
+console.log(`Загальна кількість нотаток: ${totalNotes}`);
+
+const unconfirmedNotes = todoList.getUnconfirmedNotesCount();
+console.log(`Кількість невиконаних нотаток: ${unconfirmedNotes}`);
+
+todoList.markNoteAsDone(1); 
+
+const searchResults = todoList.searchNotes("обід");
+console.log(searchResults); 
+
+const sortedByStatus = todoList.sortNotes("status"); 
+console.log(sortedByStatus);
+
+const sortedByCreatedDate = todoList.sortNotes("createdDate"); 
+console.log(sortedByCreatedDate);
+
+
+
+
