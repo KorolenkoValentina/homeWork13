@@ -24,7 +24,7 @@ class Note {
     private id: number,
     private _title: string,
     private _content: string,
-    private type: 'default' | 'requiresConfirmation' = 'default'
+    private type: 'default' | 'requiresConfirmation'
     ){
     this._createdDate = new Date();
     this._isConfirmed = false;
@@ -65,15 +65,15 @@ class Note {
   }
 
   getModifiedDate(): Date {
-  return this.modifiedDate;
+   return this.modifiedDate;
   }
 
   updateModifiedDate(): void {
-  this.modifiedDate = new Date();
+   this.modifiedDate = new Date();
   }
 
-   confirmEdit(): void {
-  this.isConfirmed = true;
+  confirmEdit(): void {
+    this.isConfirmed = true;
   }
 }
 
@@ -156,9 +156,10 @@ class TodoList {
 
   // Метод для пошуку нотаток за ім'ям або змістом
   searchNotes(query: string): Note[] {
-    return this.notes.filter(
-      (note) =>
-        note.title.includes(query) || note.content.includes(query)
+    const lowercaseQuery = query.toLowerCase();
+    return this.notes.filter((note) =>
+      note.title.toLowerCase().includes(lowercaseQuery) ||
+      note.content.toLowerCase().includes(lowercaseQuery)
     );
   }
 
@@ -182,16 +183,16 @@ class TodoList {
 
 
 const todoList = new TodoList();
-todoList.addNote("Завдання 1", "Сходити в супермаркет" )
-todoList.addNote("Завдання 2", "Погуляти з собакою")
-todoList.addNote("Завдання 3", "Приготувати обід")
-todoList.addNote("Завдання 4", "Зробити уроки з дитиною")
+todoList.addNote("Покупки", "Сходити в супермаркет за покупками" )
+todoList.addNote("Прогулянка", "Погуляти з собакою годину","requiresConfirmation")
+todoList.addNote("Завдання вдень", "Приготувати обід з морепродуктів")
+todoList.addNote("Вечір", "Зробити уроки з дитиною", "requiresConfirmation" )
 console.log(todoList.getNoteList());
 
 todoList.deleteNote(1); 
 console.log(todoList.getNoteList());
 
-todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
+todoList.editNote(3,"Готовка", "Приготувати сніданок");
 console.log(todoList.getNoteList());
 
 const note = todoList.getNoteById(2);
