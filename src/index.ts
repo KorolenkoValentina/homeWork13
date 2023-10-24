@@ -22,7 +22,7 @@ class Note {
     private id: number,
     private _title: string,
     private _content: string,
-    private type: 'default' | 'requiresConfirmation' = 'default'
+    private type: 'default' | 'requiresConfirmation'
     ){
     this._createdDate = new Date();
     this._isConfirmed = false;
