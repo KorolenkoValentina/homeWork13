@@ -12,213 +12,272 @@
 // Окремо необхідно розширити поведінку списку та додати можливість пошуку нотатка за ім'ям або змістом.
 // Також окремо необхідно розширити список можливістю сортування нотаток за статусом або часом створення.
 
-class Note {
+// Вам необхідно написати додатокTodo list. У списку нотаток повинні бути методи для додавання нового запису, 
+// видалення, редагування та отримання повної інформації про нотатку за ідентифікатором, 
+// а так само отримання списку всіх нотаток. Крім цього, у користувача має бути можливість позначити нотаток, 
+// як виконаний, і отримання інформації про те, скільки всього нотаток у списку і скільки залишилося невиконаними.
+//  Нотатки не повинні бути порожніми.
 
-  private _createdDate: Date;
-  private _isConfirmed: boolean;
-  private modifiedDate: Date;
 
-  constructor( 
-    private id: number,
-    private _title: string,
-    private _content: string,
-    private type: 'default' | 'requiresConfirmation'
-    ){
-    this._createdDate = new Date();
-    this._isConfirmed = false;
-    this.modifiedDate = this._createdDate;
-    
-  }
+// Кожний нотаток має назву, зміст, дату створення і редагування та статус. Нотатки бувають двох типів. 
+// Дефолтні та такі, які вимагають підтвердження при ридагуванні.
 
-  get getId(): number {
-    return this.id;
-  }
 
-  get title(): string {
-    return this._title;
-  }
+// Окремо необхідно розширити поведінку списку та додати можливість пошуку нотатка за ім'ям або змістом.
+// Також окремо необхідно розширити список можливістю сортування нотаток за статусом або часом створення.
 
-  set title(newTitle: string) {
-    this._title = newTitle;
-  }
+type Uuid = number;
 
-  get content(): string {
-    return this._content;
-  }
-
-  set content(newContent: string) {
-    this._content = newContent;
-  }
-
-  get createdDate(): Date {
-    return this._createdDate;
-  }
-
-  get isConfirmed(): boolean {
-    return this._isConfirmed;
-  }
-
-  set isConfirmed(isConfirmed: boolean) {
-    this._isConfirmed = isConfirmed;
-  }
-
-  getModifiedDate(): Date {
-   return this.modifiedDate;
-  }
-
-  updateModifiedDate(): void {
-   this.modifiedDate = new Date();
-  }
-
-  confirmEdit(): void {
-    this.isConfirmed = true;
-  }
+interface INote {
+  readonly id: Uuid;
+  title: string;
+  content: string;
+  readonly createdDate: Date;
+  modifiedDate: Date | null;
+  isCompleted: boolean;
+  update(payload: NoteUpdate): void;
+  complete(): void;
+  needsConfirmation: boolean;
 }
 
-class TodoList {
-  private notes: Note[];
+type NoteUpdate = Partial<Pick<INote, 'title' | 'content'>>;
 
-  constructor() {
-    this.notes = [];
+interface ITodoList  {
+
+  addNote: (title:string, content: string) => void ;
+
+  deleteNote: (id:Uuid ) => INote;
+
+  editNote: (id: Uuid, payload: NoteUpdate) => INote | undefined;
+
+  getNoteById: (id: Uuid) => INote | undefined;
+
+  getNoteList: () =>INote[];
+
+  allCount: number;
+  inCompletedCount: number;
+
+  searchNotesByTitleOrContent(query: string): INote[];
+  getSortedNotesByDate(): INote[];
+  getSortedNotesByStatus(): INote[];
+
+}
+
+
+
+class TodoList implements ITodoList {
+  protected notes : INote[] =[]
+
+  get allCount():number{
+    return this.notes.length
   }
 
-  // Метод для додавання нотаток
-  addNote(title: string, content: string, type: 'default' | 'requiresConfirmation' = 'default') {
-    if (title.trim() !== '' && content.trim() !== '') {
-      const newId = this.notes.length + 1;
-      const note = new Note(newId, title, content, type);
-      this.notes.push(note);
-    } else {
-      console.log('The title and table of contents cannot be empty.');
-    }
+  get inCompletedCount(): number {
+    return this.notes.filter((note) => !note.isCompleted).length;
   }
 
-  // Метод для видалення нотатки за ідентифікатором
-  deleteNote(id: number) {
-    const noteIndex = this.notes.findIndex((note) => note.getId === id);
-    if (noteIndex !== -1) {
-      this.notes.splice(noteIndex, 1);
-    }
+
+  getSortedNotesByDate(): INote[] {
+    return NoteSorter.sortByDate(this.notes);
   }
 
-  // Метод для редагування нотатки за ідентифікатором
-  editNote(id: number, newTitle: string, newContent: string) {
-    const note = this.notes.find((note) => note.getId === id);
-    if (note) {
-      note.title = newTitle;
-      note.content = newContent;
-      note.updateModifiedDate();
-    }
+  getSortedNotesByStatus(): INote[] {
+    return NoteSorter.sortByStatus(this.notes);
+  }
+
+  searchNotesByTitleOrContent(query: string): INote[] {
+    return NoteSearch.searchByTitleOrContent(this.notes, query);
+  }
+
+  public addNote(title: string, content: string, requiresConfirmation: boolean = false): void {
+    if (!title.trim() || !content.trim())
+      throw new Error('The title and content cannot be empty');
+    
+    const note = requiresConfirmation ? new NoteConfirmed(title, content) : new Note(title, content);
+    this.notes.push(note);
+  }
+
+
+  public deleteNote(id: Uuid): INote {
+    const noteIndex = this.findIndexById(id);
+    const [deletedNote] = this.notes.splice(noteIndex, 1);
+    return deletedNote as INote;
   }
   
 
+  public editNote(id: Uuid, payload: NoteUpdate): INote | undefined {
+    const noteIndex = this.findIndexById(id);
+    const note = this.notes[noteIndex];
 
-  // Метод для отримання нотатки за ідентифікатором
-  getNoteById(id: number): Note | undefined  {
-    return this.notes.find((note) => note.getId === id);
+    if (note) {
+      const oldNote = { ...note };
+      note.update(payload);
+      return oldNote;
+    }
+    return undefined;
   }
 
 
+  public getNoteById(id: Uuid): INote | undefined {
+    const note = this.notes[this.findIndexById(id)];
+    if (note) {
+      return note;
+    }
+    return undefined; 
+  }
 
-  // Метод для отримання списку всіх нотаток
-  getNoteList(): Note[]{
+
+  public getNoteList(): INote[] {
     return this.notes;
   }
 
-
-   // Метод для підтвердження редагування нотатки
-  confirmEdit(id: number) {
-    const note = this.notes.find((note) => note.getId === id);
+  public complete(id: Uuid): void {
+    const note = this.getNoteById(id);
     if (note) {
-      note.confirmEdit();
+      note.complete();
     }
   }
 
-  // Метод для підрахунку загальної кількості нотаток
-  getTotalNotes(): number {
-    return this.notes.length;
+
+  private findIndexById(id: Uuid): number {
+    const noteIndex = this.notes.findIndex((x) => x.id === id);
+
+    if (noteIndex === -1) throw new Error(`${id} is not defined`);
+    return noteIndex;
   }
 
-  // Метод для підрахунку кількості невиконаних нотаток
-  getUnconfirmedNotesCount(): number {
-    return this.notes.filter((note) => !note.isConfirmed).length;
+  
+
+}
+
+
+abstract class BaseNote implements INote {
+  readonly id: Uuid = Math.floor(Math.random() * 100);
+  readonly createdDate = new Date();
+  modifiedDate: Date | null = null;
+  isCompleted = false;
+  needsConfirmation: boolean = false
+
+  constructor(public title: string, public content: string) {}
+
+  public abstract update({ title, content }: NoteUpdate): void;
+
+  complete(): void {
+    this.isCompleted = true;
+  }
+}
+
+
+
+class Note extends BaseNote {
+
+  public  update ({title, content}:NoteUpdate) :void{
+    if (title?.trim())this.title=title
+    if (content?.trim())this.content=content
+    this.modifiedDate = new Date()
   }
 
-  // Метод для позначення нотатки, як виконаної, за ідентифікатором
-  markNoteAsDone(id: number): void {
-    const note = this.notes.find((note) => note.getId === id);
-    if (note) {
-      note.isConfirmed = true;
+}
+
+
+class NoteConfirmed extends BaseNote{
+  constructor(title: string, content: string) {
+    super(title, content);
+    this.needsConfirmation = true;
+  }
+
+  public update({ title, content }: NoteUpdate): void {
+    if (this.needsConfirmation) { 
+      if (title?.trim()) this.title = title; 
+      if (content?.trim()) this.content = content; 
+      this.modifiedDate = new Date();
     }
   }
+}
 
-  // Метод для пошуку нотаток за ім'ям або змістом
-  searchNotes(query: string): Note[] {
-    const lowercaseQuery = query.toLowerCase();
-    return this.notes.filter((note) =>
-      note.title.toLowerCase().includes(lowercaseQuery) ||
-      note.content.toLowerCase().includes(lowercaseQuery)
-    );
+class NoteSorter {
+  static sortByDate(notes: INote[]): INote[] {
+    return notes.slice().sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
   }
 
-
-  // Метод для сортування нотаток за статусом або часом створення
-  sortNotes(by: 'status' | 'createdDate'): Note[] {
-    if (by === 'status') {
-      return this.notes.sort((a, b) => {
-        if (a.isConfirmed === b.isConfirmed) {
-          return 0;
-        }
-        return a.isConfirmed ? -1 : 1;
-      });
-    } else if (by === 'createdDate') {
-      return this.notes.slice().sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
-    }
-    return [];
+  static sortByStatus(notes: INote[]): INote[] {
+    return notes.slice().sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted));
   }
+}
+
+
+class NoteSearch{
+  static searchByTitleOrContent(notes: INote[], query: string): INote[]  {
+  const lowercaseQuery = query.toLowerCase();
+  return notes.filter((note) =>
+    note.title.toLowerCase().includes(lowercaseQuery) ||
+    note.content.toLowerCase().includes(lowercaseQuery)
+  );
+}
 }
 
 
 
 const todoList = new TodoList();
-todoList.addNote("Покупки", "Сходити в супермаркет за покупками" )
-todoList.addNote("Прогулянка", "Погуляти з собакою годину","requiresConfirmation")
-todoList.addNote("Завдання вдень", "Приготувати обід з морепродуктів")
-todoList.addNote("Вечір", "Зробити уроки з дитиною", "requiresConfirmation" )
-console.log(todoList.getNoteList());
 
-todoList.deleteNote(1); 
-console.log(todoList.getNoteList());
+todoList.addNote("Покупки", "Молоко, хліб,сік, йогурт, яйця",true);
+todoList.addNote("Прогулянка", "Погуляти з собакою");
+todoList.addNote("Завдання", "Виконати проект до кінця тижня");
+todoList.addNote("Спорт", "Піти на йогу");
+todoList.addNote("Подорож", "Забронювати готель на відпустку");
 
-todoList.editNote(3,"Готовка", "Приготувати сніданок");
-console.log(todoList.getNoteList());
-
-const note = todoList.getNoteById(2);
-console.log(note?.title);
-console.log(note?.content);
-
-
+// Отримання списку всіх нотаток
 const allNotes = todoList.getNoteList();
-console.log(allNotes);
+console.log("Усі нотатки:", allNotes);
+
+// Отримання кількості нотаток та невиконаних нотаток
+console.log("Загальна кількість нотаток:", todoList.allCount);
+console.log("Кількість невиконаних нотаток:", todoList.inCompletedCount);
+
+// Позначення нотатки як виконаної
+const noteToComplete = allNotes[0].id; 
+todoList.complete(noteToComplete);
+console.log("Нотатка відзначена як виконана");
+
+// Редагування нотатки
+const noteToEdit = allNotes[1].id; 
+const updatedNote = todoList.editNote(noteToEdit, { title: "Нове завдання" });
+if (updatedNote) {
+  console.log("Нотатка успішно відредагована:", updatedNote);
+} else {
+  console.log("Нотатка для редагування не знайдена");
+}
+
+// Видалення нотатки
+const noteToDelete = allNotes[2].id; 
+const deletedNote = todoList.deleteNote(noteToDelete);
+console.log("Нотатка видалена:", deletedNote);
 
 
-todoList.confirmEdit(2); 
+// Отримання повної інформації про нотатку за ідентифікатором
+const noteIdToGetInfo = allNotes[1].id; // 
+const noteInfo = todoList.getNoteById(noteIdToGetInfo);
+if (noteInfo) {
+  console.log("Інформація про нотатку:", noteInfo);
+} else {
+  console.log("Нотатка з таким ідентифікатором не знайдена");
+}
 
-const totalNotes = todoList.getTotalNotes();
-console.log(`Загальна кількість нотаток: ${totalNotes}`);
 
-const unconfirmedNotes = todoList.getUnconfirmedNotesCount();
-console.log(`Кількість невиконаних нотаток: ${unconfirmedNotes}`);
 
-todoList.markNoteAsDone(1); 
+// Сортування списку за датою та виведення результату
+const notesSortedByDate = NoteSorter.sortByDate(todoList.getNoteList());
+console.log("Нотатки відсортовані за датою:", notesSortedByDate);
 
-const searchResults = todoList.searchNotes("обід");
-console.log(searchResults); 
+// Сортування нотаток за статусом
+const notesSortedByStatus = NoteSorter.sortByStatus(todoList.getNoteList());
+console.log("Нотатки відсортовані за статусом:", notesSortedByStatus);
 
-const sortedByStatus = todoList.sortNotes("status"); 
-console.log(sortedByStatus);
+// Пошук нотаток за ім'ям або змістом
+const searchQuery = "завдання";
+const searchResult = NoteSearch.searchByTitleOrContent(todoList.getNoteList(), searchQuery);
+console.log(`Результат пошуку за запитом "${searchQuery}":`, searchResult);
+ 
 
-const sortedByCreatedDate = todoList.sortNotes("createdDate"); 
-console.log(sortedByCreatedDate);
 
 
