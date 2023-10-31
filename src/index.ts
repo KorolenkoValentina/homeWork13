@@ -210,7 +210,7 @@ const todoList = new TodoList();
 
 todoList.addNote("Покупки", "Молоко, хліб,сік, йогурт, яйця",true);
 todoList.addNote("Прогулянка", "Погуляти з собакою");
-todoList.addNote("Завдання", "Виконати проект до кінця тижня");
+todoList.addNote("Завдання", "Виконати проект до кінця тижня",true);
 todoList.addNote("Спорт", "Піти на йогу");
 todoList.addNote("Подорож", "Забронювати готель на відпустку");
 
