@@ -253,7 +253,7 @@ if (noteInfo) {
 
 
 
-// Сортування списку за датою та виведення результату
+// Сортування списку за датою 
 const notesSortedByDate = NoteSorter.sortByDate(todoList.getNoteList());
 console.log("Нотатки відсортовані за датою:", notesSortedByDate);
 
@@ -261,7 +261,7 @@ console.log("Нотатки відсортовані за датою:", notesSor
 const notesSortedByStatus = NoteSorter.sortByStatus(todoList.getNoteList());
 console.log("Нотатки відсортовані за статусом:", notesSortedByStatus);
 
-// Пошук нотаток за ім'ям або змістом
+// Пошук нотаток за назвою або змістом
 const searchQuery = "завдання";
 const searchResult = NoteSearch.searchByTitleOrContent(todoList.getNoteList(), searchQuery);
 console.log(`Результат пошуку за запитом "${searchQuery}":`, searchResult);
