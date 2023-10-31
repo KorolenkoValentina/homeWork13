@@ -12,77 +12,68 @@
 // Окремо необхідно розширити поведінку списку та додати можливість пошуку нотатка за ім'ям або змістом.
 // Також окремо необхідно розширити список можливістю сортування нотаток за статусом або часом створення.
 
-// Вам необхідно написати додатокTodo list. У списку нотаток повинні бути методи для додавання нового запису, 
-// видалення, редагування та отримання повної інформації про нотатку за ідентифікатором, 
-// а так само отримання списку всіх нотаток. Крім цього, у користувача має бути можливість позначити нотаток, 
-// як виконаний, і отримання інформації про те, скільки всього нотаток у списку і скільки залишилося невиконаними.
-//  Нотатки не повинні бути порожніми.
 
 
-// Кожний нотаток має назву, зміст, дату створення і редагування та статус. Нотатки бувають двох типів. 
-// Дефолтні та такі, які вимагають підтвердження при ридагуванні.
+class Note {
 
+  private _createdDate: Date;
+  private _isConfirmed: boolean;
+  private modifiedDate: Date;
 
-// Окремо необхідно розширити поведінку списку та додати можливість пошуку нотатка за ім'ям або змістом.
-// Також окремо необхідно розширити список можливістю сортування нотаток за статусом або часом створення.
+  constructor( 
+    private id: number,
+    private _title: string,
+    private _content: string,
+    private type: 'default' | 'requiresConfirmation' = 'default'
+    ){
+    this._createdDate = new Date();
+    this._isConfirmed = false;
+    this.modifiedDate = this._createdDate;
+    
+  }
 
-type Uuid = number;
+  get getId(): number {
+    return this.id;
+  }
 
-interface INote {
-  readonly id: Uuid;
-  title: string;
-  content: string;
-  readonly createdDate: Date;
-  modifiedDate: Date | null;
-  isCompleted: boolean;
-  update(payload: NoteUpdate): void;
-  complete(): void;
-  needsConfirmation: boolean;
-}
+  get title(): string {
+    return this._title;
+  }
 
-type NoteUpdate = Partial<Pick<INote, 'title' | 'content'>>;
+  set title(newTitle: string) {
+    this._title = newTitle;
+  }
 
-interface ITodoList  {
+  get content(): string {
+    return this._content;
+  }
 
-  addNote: (title:string, content: string) => void ;
+  set content(newContent: string) {
+    this._content = newContent;
+  }
 
-  deleteNote: (id:Uuid ) => INote;
+  get createdDate(): Date {
+    return this._createdDate;
+  }
 
-  editNote: (id: Uuid, payload: NoteUpdate) => INote | undefined;
-
-  getNoteById: (id: Uuid) => INote | undefined;
-
-  getNoteList: () =>INote[];
-
-  allCount: number;
-  inCompletedCount: number;
-
-  searchNotesByTitleOrContent(query: string): INote[];
-  getSortedNotesByDate(): INote[];
-  getSortedNotesByStatus(): INote[];
-
-}
-
-
-
-class TodoList implements ITodoList {
-  protected notes : INote[] =[]
-
-  get allCount():number{
-    return this.notes.length
+  get isConfirmed(): boolean {
+    return this._isConfirmed;
   }
 
   get inCompletedCount(): number {
     return this.notes.filter((note) => !note.isCompleted).length;
   }
 
-
-  getSortedNotesByDate(): INote[] {
-    return NoteSorter.sortByDate(this.notes);
+  getModifiedDate(): Date {
+  return this.modifiedDate;
   }
 
-  getSortedNotesByStatus(): INote[] {
-    return NoteSorter.sortByStatus(this.notes);
+  updateModifiedDate(): void {
+  this.modifiedDate = new Date();
+  }
+
+   confirmEdit(): void {
+  this.isConfirmed = true;
   }
 
   searchNotesByTitleOrContent(query: string): INote[] {
@@ -193,11 +184,13 @@ class NoteConfirmed extends BaseNote{
       this.modifiedDate = new Date();
     }
   }
-}
 
-class NoteSorter {
-  static sortByDate(notes: INote[]): INote[] {
-    return notes.slice().sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
+  // Метод для пошуку нотаток за ім'ям або змістом
+  searchNotes(query: string): Note[] {
+    return this.notes.filter(
+      (note) =>
+        note.title.includes(query) || note.content.includes(query)
+    );
   }
 
   static sortByStatus(notes: INote[]): INote[] {
@@ -219,14 +212,23 @@ class NoteSearch{
 
 
 const todoList = new TodoList();
+todoList.addNote("Завдання 1", "Сходити в супермаркет" )
+todoList.addNote("Завдання 2", "Погуляти з собакою")
+todoList.addNote("Завдання 3", "Приготувати обід")
+todoList.addNote("Завдання 4", "Зробити уроки з дитиною")
+console.log(todoList.getNoteList());
 
-todoList.addNote("Покупки", "Молоко, хліб,сік, йогурт, яйця",true);
-todoList.addNote("Прогулянка", "Погуляти з собакою");
-todoList.addNote("Завдання", "Виконати проект до кінця тижня");
-todoList.addNote("Спорт", "Піти на йогу");
-todoList.addNote("Подорож", "Забронювати готель на відпустку");
+todoList.deleteNote(1); 
+console.log(todoList.getNoteList());
 
-// Отримання списку всіх нотаток
+todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
+console.log(todoList.getNoteList());
+
+const note = todoList.getNoteById(2);
+console.log(note?.title);
+console.log(note?.content);
+
+
 const allNotes = todoList.getNoteList();
 console.log("Усі нотатки:", allNotes);
 
