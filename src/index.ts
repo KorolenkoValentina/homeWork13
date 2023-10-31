@@ -14,66 +14,63 @@
 
 
 
-class Note {
+type Uuid = number;
 
-  private _createdDate: Date;
-  private _isConfirmed: boolean;
-  private modifiedDate: Date;
+interface INote {
+  readonly id: Uuid;
+  title: string;
+  content: string;
+  readonly createdDate: Date;
+  modifiedDate: Date | null;
+  isCompleted: boolean;
+  update(payload: NoteUpdate): void;
+  complete(): void;
+  needsConfirmation: boolean;
+}
 
-  constructor( 
-    private id: number,
-    private _title: string,
-    private _content: string,
-    private type: 'default' | 'requiresConfirmation' = 'default'
-    ){
-    this._createdDate = new Date();
-    this._isConfirmed = false;
-    this.modifiedDate = this._createdDate;
-    
-  }
+type NoteUpdate = Partial<Pick<INote, 'title' | 'content'>>;
 
-  get getId(): number {
-    return this.id;
-  }
+interface ITodoList  {
 
-  get title(): string {
-    return this._title;
-  }
+  addNote: (title:string, content: string) => void ;
 
-  set title(newTitle: string) {
-    this._title = newTitle;
-  }
+  deleteNote: (id:Uuid ) => INote;
 
-  get content(): string {
-    return this._content;
-  }
+  editNote: (id: Uuid, payload: NoteUpdate) => INote | undefined;
 
-  set content(newContent: string) {
-    this._content = newContent;
-  }
+  getNoteById: (id: Uuid) => INote | undefined;
 
-  get createdDate(): Date {
-    return this._createdDate;
-  }
+  getNoteList: () =>INote[];
 
-  get isConfirmed(): boolean {
-    return this._isConfirmed;
+  allCount: number;
+  inCompletedCount: number;
+
+  searchNotesByTitleOrContent(query: string): INote[];
+  getSortedNotesByDate(): INote[];
+  getSortedNotesByStatus(): INote[];
+
+}
+
+
+
+class TodoList implements ITodoList {
+  protected notes : INote[] =[]
+
+  get allCount():number{
+    return this.notes.length
   }
 
   get inCompletedCount(): number {
     return this.notes.filter((note) => !note.isCompleted).length;
   }
 
-  getModifiedDate(): Date {
-  return this.modifiedDate;
+
+  getSortedNotesByDate(): INote[] {
+    return NoteSorter.sortByDate(this.notes);
   }
 
-  updateModifiedDate(): void {
-  this.modifiedDate = new Date();
-  }
-
-   confirmEdit(): void {
-  this.isConfirmed = true;
+  getSortedNotesByStatus(): INote[] {
+    return NoteSorter.sortByStatus(this.notes);
   }
 
   searchNotesByTitleOrContent(query: string): INote[] {
@@ -184,13 +181,11 @@ class NoteConfirmed extends BaseNote{
       this.modifiedDate = new Date();
     }
   }
+}
 
-  // Метод для пошуку нотаток за ім'ям або змістом
-  searchNotes(query: string): Note[] {
-    return this.notes.filter(
-      (note) =>
-        note.title.includes(query) || note.content.includes(query)
-    );
+class NoteSorter {
+  static sortByDate(notes: INote[]): INote[] {
+    return notes.slice().sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
   }
 
   static sortByStatus(notes: INote[]): INote[] {
@@ -212,23 +207,14 @@ class NoteSearch{
 
 
 const todoList = new TodoList();
-todoList.addNote("Завдання 1", "Сходити в супермаркет" )
-todoList.addNote("Завдання 2", "Погуляти з собакою")
-todoList.addNote("Завдання 3", "Приготувати обід")
-todoList.addNote("Завдання 4", "Зробити уроки з дитиною")
-console.log(todoList.getNoteList());
 
-todoList.deleteNote(1); 
-console.log(todoList.getNoteList());
+todoList.addNote("Покупки", "Молоко, хліб,сік, йогурт, яйця",true);
+todoList.addNote("Прогулянка", "Погуляти з собакою");
+todoList.addNote("Завдання", "Виконати проект до кінця тижня");
+todoList.addNote("Спорт", "Піти на йогу");
+todoList.addNote("Подорож", "Забронювати готель на відпустку");
 
-todoList.editNote(3,"Завдання 3", "Приготувати сніданок");
-console.log(todoList.getNoteList());
-
-const note = todoList.getNoteById(2);
-console.log(note?.title);
-console.log(note?.content);
-
-
+// Отримання списку всіх нотаток
 const allNotes = todoList.getNoteList();
 console.log("Усі нотатки:", allNotes);
 
@@ -280,6 +266,3 @@ const searchQuery = "завдання";
 const searchResult = NoteSearch.searchByTitleOrContent(todoList.getNoteList(), searchQuery);
 console.log(`Результат пошуку за запитом "${searchQuery}":`, searchResult);
  
-
-
-
