@@ -35,13 +35,11 @@ interface ISearchable {
 }
 
 interface ISorte{
-   sortByDate(notes: INote[]): INote[] 
-   sortByStatus(notes: INote[]): INote[]
+  sortByDate(notes: INote[]): INote[] 
+  sortByStatus(notes: INote[]): INote[]
 }
 
 interface ITodoList  {
-
-  notes: INote[];
 
   addNote(title: string, description: string, confirm: boolean): void;
 
