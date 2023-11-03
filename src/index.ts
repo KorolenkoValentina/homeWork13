@@ -22,20 +22,32 @@ interface INote {
   readonly createdDate: Date;
   modifiedDate: Date | null;
   isCompleted: boolean;
-  update(payload: NoteUpdate): void;
+  update({title, content}: NoteUpdate): void;
   complete(): void;
   needsConfirmation: boolean;
 }
 
 type NoteUpdate = Partial<Pick<INote, 'title' | 'content'>>;
+type NoteType = Note | NoteConfirmed;
+
+interface ISearchable {
+  searchNotesByTitleOrContent(query: string): INote[];
+}
+
+interface ISorte{
+   sortByDate(notes: INote[]): INote[] 
+   sortByStatus(notes: INote[]): INote[]
+}
 
 interface ITodoList  {
 
-  addNote: (title:string, content: string) => void ;
+  notes: INote[];
 
-  deleteNote: (id:Uuid ) => INote;
+  addNote(title: string, description: string, confirm: boolean): void;
 
-  editNote: (id: Uuid, payload: NoteUpdate) => INote | undefined;
+  deleteNote: (id: Uuid)=> INote | undefined;
+
+  editNote: (id: Uuid, {title, content}: NoteUpdate)=> void
 
   getNoteById: (id: Uuid) => INote | undefined;
 
@@ -44,16 +56,12 @@ interface ITodoList  {
   allCount: number;
   inCompletedCount: number;
 
-  searchNotesByTitleOrContent(query: string): INote[];
-  getSortedNotesByDate(): INote[];
-  getSortedNotesByStatus(): INote[];
 
 }
 
 
-
 class TodoList implements ITodoList {
-  protected notes : INote[] =[]
+ notes : NoteType[] = [];
 
   get allCount():number{
     return this.notes.length
@@ -64,54 +72,38 @@ class TodoList implements ITodoList {
   }
 
 
-  getSortedNotesByDate(): INote[] {
-    return NoteSorter.sortByDate(this.notes);
-  }
-
-  getSortedNotesByStatus(): INote[] {
-    return NoteSorter.sortByStatus(this.notes);
-  }
-
-  searchNotesByTitleOrContent(query: string): INote[] {
-    return NoteSearch.searchByTitleOrContent(this.notes, query);
-  }
-
-  public addNote(title: string, content: string, requiresConfirmation: boolean = false): void {
+  public addNote(title: string, content: string, confirm: boolean = false): void {
     if (!title.trim() || !content.trim())
       throw new Error('The title and content cannot be empty');
     
-    const note = requiresConfirmation ? new NoteConfirmed(title, content) : new Note(title, content);
+    const note = confirm ? new NoteConfirmed(title, content) : new Note(title, content);
     this.notes.push(note);
   }
 
 
-  public deleteNote(id: Uuid): INote {
-    const noteIndex = this.findIndexById(id);
-    const [deletedNote] = this.notes.splice(noteIndex, 1);
-    return deletedNote as INote;
-  }
+  public deleteNote(id: Uuid): INote | undefined {
+    let noteIndex = this.findIndexById(id);
+
+    let [deleteNote] = this.notes.splice(noteIndex, 1);
+    return deleteNote;
+
+}
   
 
-  public editNote(id: Uuid, payload: NoteUpdate): INote | undefined {
+  public editNote(id: Uuid, payload: NoteUpdate): INote {
     const noteIndex = this.findIndexById(id);
     const note = this.notes[noteIndex];
-
-    if (note) {
-      const oldNote = { ...note };
-      note.update(payload);
-      return oldNote;
-    }
-    return undefined;
+    const oldNote = {...note} as INote;
+    note.update(payload);
+    return oldNote;
   }
 
 
-  public getNoteById(id: Uuid): INote | undefined {
+  getNoteById(id: Uuid): INote {
     const note = this.notes[this.findIndexById(id)];
-    if (note) {
-      return note;
-    }
-    return undefined; 
-  }
+    if (!note) throw new Error('Can not be find note by the id');
+    return note;
+}
 
 
   public getNoteList(): INote[] {
@@ -180,25 +172,28 @@ class NoteConfirmed extends BaseNote{
   }
 }
 
-class NoteSorter {
-  static sortByDate(notes: INote[]): INote[] {
+class NoteSorter extends TodoList implements ISorte  {
+  public sortByDate(notes: INote[]): INote[] {
     return notes.slice().sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
   }
 
-  static sortByStatus(notes: INote[]): INote[] {
+  public sortByStatus(notes: INote[]): INote[] {
     return notes.slice().sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted));
   }
 }
 
 
-class NoteSearch{
-  static searchByTitleOrContent(notes: INote[], query: string): INote[]  {
-  const lowercaseQuery = query.toLowerCase();
-  return notes.filter((note) =>
-    note.title.toLowerCase().includes(lowercaseQuery) ||
-    note.content.toLowerCase().includes(lowercaseQuery)
-  );
-}
+class NoteSearch extends TodoList implements ISearchable{
+  public searchNotesByTitleOrContent(query: string): INote[] {
+    const foundNotes: INote[] = this.notes.filter(
+      (note) => note.title.toLowerCase().includes(query.toLowerCase()) || note.content.toLowerCase().includes(query.toLowerCase())
+    );
+    return foundNotes;
+  }
+
+  setNotes(notes: NoteType[]) {
+    this.notes = notes;
+  }
 }
 
 
@@ -226,12 +221,8 @@ console.log("Нотатка відзначена як виконана");
 
 // Редагування нотатки
 const noteToEdit = allNotes[1].id; 
-const updatedNote = todoList.editNote(noteToEdit, { title: "Нове завдання" });
-if (updatedNote) {
-  console.log("Нотатка успішно відредагована:", updatedNote);
-} else {
-  console.log("Нотатка для редагування не знайдена");
-}
+todoList.editNote(noteToEdit, { title: "Нова назва", content: "Оновлені дані" });
+console.log(todoList.getNoteList())
 
 // Видалення нотатки
 const noteToDelete = allNotes[2].id; 
@@ -248,25 +239,31 @@ if (noteInfo) {
   console.log("Нотатка з таким ідентифікатором не знайдена");
 }
 
-// Сортування списку за датою 
-const notesSortedByDate = NoteSorter.sortByDate(todoList.getNoteList());
-console.log("Нотатки відсортовані за датою:", notesSortedByDate);
 
-// Сортування нотаток за статусом
-const notesSortedByStatus = NoteSorter.sortByStatus(todoList.getNoteList());
-console.log("Нотатки відсортовані за статусом:", notesSortedByStatus);
+const noteSorter = new NoteSorter();
+const searchableTodo = new NoteSearch();
+const notes = todoList.getNoteList();
 
-// Пошук нотаток за назвою або змістом
-const searchQuery = "завдання";
-const searchResult = NoteSearch.searchByTitleOrContent(todoList.getNoteList(), searchQuery);
-console.log(`Результат пошуку за запитом "${searchQuery}":`, searchResult);
+// Сортування за датою створення
+const sortedByDate = noteSorter.sortByDate(notes);
+console.log("Сортування за датою:", sortedByDate);
+
+// Сортування за статусом (завершено/не завершено)
+const sortedByStatus = noteSorter.sortByStatus(notes);
+console.log("Сортування за статусом:", sortedByStatus);
+
+
+// Пошук нотаток за ключовим словом
+searchableTodo.setNotes(notes);
+const foundNotes = searchableTodo.searchNotesByTitleOrContent("Завдання");
+console.log("Знайдені нотатки:", foundNotes);
 
 
 
 // Ще один варіант
 
-/*
-type Uuid = number;
+
+/*type Uuid = number;
 
 interface INote {
   readonly id: Uuid;
@@ -346,6 +343,7 @@ class TodoList implements ITodoList {
 
     return note;
   }
+
 
   public getNoteById(id: Uuid): INote | undefined {
     const note = this.notes.find((x) => x.id === id);
@@ -492,3 +490,4 @@ console.log("Сортування за статусом:", sortedByStatus);
 searchableTodo.setNotes(notes);
 const foundNotes = searchableTodo.searchNotesByTitleOrContent("Завдання");
 console.log("Знайдені нотатки:", foundNotes);*/
+
