@@ -59,7 +59,7 @@ interface ITodoList  {
 
 
 class TodoList implements ITodoList {
- notes : NoteType[] = [];
+ protected notes : NoteType[] = [];
 
   get allCount():number{
     return this.notes.length
@@ -97,11 +97,11 @@ class TodoList implements ITodoList {
   }
 
 
-  getNoteById(id: Uuid): INote {
+  public getNoteById(id: Uuid): INote {
     const note = this.notes[this.findIndexById(id)];
     if (!note) throw new Error('Can not be find note by the id');
     return note;
-}
+  }
 
 
   public getNoteList(): INote[] {
